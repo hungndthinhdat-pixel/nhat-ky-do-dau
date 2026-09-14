@@ -24,8 +24,8 @@ const firebaseConfig = {
 
 // Hậu tố giả dùng để biến "tên đăng nhập" thành một email hợp lệ cho Firebase.
 // Không cần là domain thật — chỉ là quy ước nội bộ. Khi tạo tài khoản lái xe
-// trong Firebase Console, luôn dùng dạng: <tên đăng nhập>@laixe.local
-export const EMAIL_DOMAIN = "laixe.local";
+// trong Firebase Console, luôn dùng dạng: <tên đăng nhập>@haiphuong.com
+export const EMAIL_DOMAIN = "haiphuong.com";
 
 export const firebaseConfigured = firebaseConfig.apiKey !== "REPLACE_ME" && !!firebaseConfig.apiKey;
 

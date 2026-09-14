@@ -164,8 +164,8 @@ function Field({ label, unit, children, hint }) {
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-        <span style={{ fontSize: 13.5, color: "#9AA4B2", letterSpacing: 0.2 }}>{label}</span>
-        {unit && <span style={{ fontSize: 12, color: "#5B6472" }}>{unit}</span>}
+        <span style={{ fontSize: 13.5, color: "#6B7280", letterSpacing: 0.2 }}>{label}</span>
+        {unit && <span style={{ fontSize: 12, color: "#9CA3AF" }}>{unit}</span>}
       </div>
       {children}
       {hint}
@@ -176,13 +176,13 @@ function Field({ label, unit, children, hint }) {
 function OcrHint({ status }) {
   if (status === "reading")
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8B94A0", marginTop: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B7280", marginTop: 6 }}>
         <span
           style={{
             width: 10,
             height: 10,
             borderRadius: "50%",
-            border: "1.5px solid #5B6472",
+            border: "1.5px solid #9CA3AF",
             borderTopColor: "#F5A623",
             display: "inline-block",
             animation: "spin 0.7s linear infinite",
@@ -193,7 +193,7 @@ function OcrHint({ status }) {
     );
   if (status === "done")
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#3DD68C", marginTop: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#178A4C", marginTop: 6 }}>
         <Check size={13} /> Đã tự động điền — kiểm tra lại trước khi lưu.
       </div>
     );
@@ -205,7 +205,7 @@ function OcrHint({ status }) {
     );
   if (status === "error")
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8B94A0", marginTop: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#6B7280", marginTop: 6 }}>
         <AlertCircle size={13} /> Không đọc được, vui lòng nhập tay.
       </div>
     );
@@ -235,8 +235,8 @@ function PhotoSlot({ label, dataUrl, onCapture, busy }) {
           width: "100%",
           aspectRatio: "1 / 1",
           borderRadius: 10,
-          border: dataUrl ? "1.5px solid #3DD68C" : "1.5px dashed #3A424D",
-          background: dataUrl ? `url(${dataUrl}) center/cover no-repeat` : "#1B2027",
+          border: dataUrl ? "1.5px solid #178A4C" : "1.5px dashed #3A424D",
+          background: dataUrl ? `url(${dataUrl}) center/cover no-repeat` : "#FFFFFF",
           position: "relative",
           cursor: "pointer",
           overflow: "hidden",
@@ -245,7 +245,7 @@ function PhotoSlot({ label, dataUrl, onCapture, busy }) {
         aria-label={label}
       >
         {!dataUrl && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#5B6472" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#9CA3AF" }}>
             <Camera size={22} strokeWidth={1.6} />
           </div>
         )}
@@ -258,7 +258,7 @@ function PhotoSlot({ label, dataUrl, onCapture, busy }) {
               width: 20,
               height: 20,
               borderRadius: "50%",
-              background: "#3DD68C",
+              background: "#178A4C",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -268,13 +268,59 @@ function PhotoSlot({ label, dataUrl, onCapture, busy }) {
           </div>
         )}
       </button>
-      <div style={{ fontSize: 11.5, color: "#8B94A0", textAlign: "center", marginTop: 6, lineHeight: 1.3 }}>{label}</div>
+      <div style={{ fontSize: 11.5, color: "#6B7280", textAlign: "center", marginTop: 6, lineHeight: 1.3 }}>{label}</div>
     </div>
   );
 }
 
 function GlobalStyle() {
   return <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>;
+}
+
+const BRAND_GREEN = "#178A4C";
+const BRAND_GREEN_DARK = "#0E6B3A";
+
+function CompanyHeader({ subtitle, onSettings, onLogout }) {
+  return (
+    <div
+      style={{
+        background: `linear-gradient(135deg, ${BRAND_GREEN}, ${BRAND_GREEN_DARK})`,
+        borderRadius: 14,
+        padding: "16px 18px",
+        marginBottom: 20,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        boxShadow: "0 4px 14px rgba(23,138,76,0.25)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 9, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+          <img src="/logo.png" alt="Logo" style={{ width: "78%", height: "78%", objectFit: "contain" }} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: "#FFFFFF", fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>
+            CÔNG TY TNHH THƯƠNG MẠI VÀ DỊCH VỤ HẢI PHƯỢNG
+          </div>
+          {subtitle && <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12.5, marginTop: 2 }}>{subtitle}</div>}
+        </div>
+      </div>
+      {(onSettings || onLogout) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          {onSettings && (
+            <button onClick={onSettings} style={{ background: "none", border: "none", color: "#FFFFFF", cursor: "pointer", opacity: 0.9 }}>
+              <Settings size={17} />
+            </button>
+          )}
+          {onLogout && (
+            <button onClick={onLogout} style={{ background: "none", border: "none", color: "#FFFFFF", display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 12.5, opacity: 0.9 }}>
+              <LogOut size={14} /> Đăng xuất
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ---------- settings modal ----------
@@ -290,42 +336,42 @@ function SettingsModal({ initialUrl, initialCloudName, initialUploadPreset, onSa
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 420, background: "#1B2027", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: "22px 20px 30px 20px", maxHeight: "85vh", overflowY: "auto" }}
+        style={{ width: "100%", maxWidth: 420, background: "#FFFFFF", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: "22px 20px 30px 20px", maxHeight: "85vh", overflowY: "auto" }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <span style={{ fontSize: 15, fontWeight: 700 }}>Cài đặt kết nối</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#8B94A0", cursor: "pointer" }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#6B7280", cursor: "pointer" }}>
             <X size={18} />
           </button>
         </div>
 
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#9AA4B2", marginBottom: 8 }}>Google Sheet</div>
-        <p style={{ fontSize: 12, color: "#8B94A0", lineHeight: 1.5, marginBottom: 10 }}>Link Web App của Google Apps Script (xem README.md).</p>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7280", marginBottom: 8 }}>Google Sheet</div>
+        <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5, marginBottom: 10 }}>Link Web App của Google Apps Script (xem README.md).</p>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="https://script.google.com/macros/s/.../exec"
-          style={{ width: "100%", background: "#14171B", border: "1px solid #262D34", borderRadius: 10, padding: "12px 14px", color: "#EDEEF0", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
+          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
         />
 
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#9AA4B2", marginBottom: 8 }}>Cloudinary (lưu ảnh)</div>
-        <p style={{ fontSize: 12, color: "#8B94A0", lineHeight: 1.5, marginBottom: 10 }}>Cloud name và Upload preset (xem README.md, mục Cloudinary).</p>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7280", marginBottom: 8 }}>Cloudinary (lưu ảnh)</div>
+        <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5, marginBottom: 10 }}>Cloud name và Upload preset (xem README.md, mục Cloudinary).</p>
         <input
           value={cloudName}
           onChange={(e) => setCloudNameField(e.target.value)}
           placeholder="Cloud name — vd: dabc123xy"
-          style={{ width: "100%", background: "#14171B", border: "1px solid #262D34", borderRadius: 10, padding: "12px 14px", color: "#EDEEF0", fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }}
+          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }}
         />
         <input
           value={uploadPreset}
           onChange={(e) => setUploadPresetField(e.target.value)}
           placeholder="Upload preset — vd: nhat_ky_do_dau"
-          style={{ width: "100%", background: "#14171B", border: "1px solid #262D34", borderRadius: 10, padding: "12px 14px", color: "#EDEEF0", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
+          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
         />
 
         <button
           onClick={() => onSave({ webAppUrl: value.trim(), cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim() })}
-          style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: "#F5A623", color: "#14171B", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+          style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: "#F5A623", color: "#111827", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
         >
           Lưu
         </button>
@@ -537,8 +583,8 @@ export default function FuelLogApp() {
 
   const shellStyle = {
     minHeight: "100vh",
-    background: "#14171B",
-    color: "#EDEEF0",
+    background: "#F3F4F6",
+    color: "#111827",
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     display: "flex",
     justifyContent: "center",
@@ -556,15 +602,15 @@ export default function FuelLogApp() {
         <GlobalStyle />
         <div style={{ ...cardStyle, padding: "40px 24px", alignItems: "center", textAlign: "center", justifyContent: "center" }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: "#F5A623", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-            <Fuel size={24} color="#14171B" />
+            <Fuel size={24} color="#111827" />
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Chưa cấu hình xong: {missing.join(", ")}</div>
-          <p style={{ fontSize: 13.5, color: "#8B94A0", lineHeight: 1.6, marginBottom: 24 }}>
+          <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6, marginBottom: 24 }}>
             App này cần link Google Apps Script (lưu dữ liệu) và tài khoản Cloudinary (lưu ảnh). Làm theo file <b>README.md</b> đi kèm, sau đó nhập vào đây.
           </p>
           <button
             onClick={() => setShowSettings(true)}
-            style={{ padding: "13px 26px", borderRadius: 10, border: "none", background: "#F5A623", color: "#14171B", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
+            style={{ padding: "13px 26px", borderRadius: 10, border: "none", background: "#F5A623", color: "#111827", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
           >
             Mở Cài đặt
           </button>
@@ -589,10 +635,10 @@ export default function FuelLogApp() {
         <GlobalStyle />
         <div style={{ ...cardStyle, padding: "40px 24px", alignItems: "center", textAlign: "center", justifyContent: "center" }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: "#F5A623", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-            <User size={24} color="#14171B" />
+            <User size={24} color="#111827" />
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Chưa cấu hình Firebase</div>
-          <p style={{ fontSize: 13.5, color: "#8B94A0", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6 }}>
             Mở file <b>src/firebase.js</b>, dán cấu hình dự án Firebase của bạn vào, rồi build lại. Xem hướng dẫn chi tiết trong <b>README.md</b>, mục "Firebase".
           </p>
         </div>
@@ -606,7 +652,7 @@ export default function FuelLogApp() {
       <div style={shellStyle}>
         <GlobalStyle />
         <div style={{ ...cardStyle, alignItems: "center", justifyContent: "center" }}>
-          <div style={{ color: "#5B6472", fontSize: 13 }}>Đang tải…</div>
+          <div style={{ color: "#9CA3AF", fontSize: 13 }}>Đang tải…</div>
         </div>
       </div>
     );
@@ -617,42 +663,33 @@ export default function FuelLogApp() {
     return (
       <div style={shellStyle}>
         <GlobalStyle />
-        <div style={{ ...cardStyle, padding: "40px 24px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F5A623", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Fuel size={19} color="#14171B" strokeWidth={2.2} />
-              </div>
-              <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: -0.2 }}>Nhật ký đổ dầu</span>
-            </div>
-            <button onClick={() => setShowSettings(true)} style={{ background: "none", border: "none", color: "#5B6472", cursor: "pointer" }}>
-              <Settings size={19} />
-            </button>
-          </div>
-          <p style={{ color: "#8B94A0", fontSize: 13.5, marginTop: 6, marginBottom: 32, lineHeight: 1.5 }}>
+        <div style={{ ...cardStyle, padding: "24px 20px" }}>
+          <CompanyHeader subtitle="Đăng nhập lái xe" onSettings={() => setShowSettings(true)} />
+          <div style={{ padding: "0 4px" }}>
+          <p style={{ color: "#6B7280", fontSize: 13.5, marginTop: 6, marginBottom: 32, lineHeight: 1.5 }}>
             Đăng nhập bằng tài khoản quản lý đội xe cấp cho bạn.
           </p>
 
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 12, color: "#5B6472", marginBottom: 8 }}>Tên đăng nhập</div>
+            <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 8 }}>Tên đăng nhập</div>
             <input
               value={loginUsername}
               onChange={(e) => setLoginUsername(e.target.value)}
               placeholder="VD: nguyenvana"
               autoCapitalize="none"
-              style={{ width: "100%", background: "#1B2027", border: "1px solid #262D34", borderRadius: 10, padding: "13px 14px", color: "#EDEEF0", fontSize: 15, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 10, padding: "13px 14px", color: "#111827", fontSize: 15, outline: "none", boxSizing: "border-box" }}
             />
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, color: "#5B6472", marginBottom: 8 }}>Mã PIN</div>
+            <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 8 }}>Mã PIN</div>
             <input
               value={loginPin}
               onChange={(e) => setLoginPin(e.target.value)}
               type="password"
               inputMode="numeric"
               placeholder="••••••"
-              style={{ width: "100%", background: "#1B2027", border: "1px solid #262D34", borderRadius: 10, padding: "13px 14px", color: "#EDEEF0", fontSize: 15, outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 10, padding: "13px 14px", color: "#111827", fontSize: 15, outline: "none", boxSizing: "border-box" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") doLogin();
               }}
@@ -669,13 +706,14 @@ export default function FuelLogApp() {
           <button
             onClick={doLogin}
             disabled={loginBusy}
-            style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: "#F5A623", color: "#14171B", fontWeight: 700, fontSize: 14.5, cursor: "pointer" }}
+            style={{ width: "100%", padding: "14px 0", borderRadius: 10, border: "none", background: "#F5A623", color: "#111827", fontWeight: 700, fontSize: 14.5, cursor: "pointer" }}
           >
             {loginBusy ? "Đang đăng nhập…" : "Đăng nhập"}
           </button>
 
-          <div style={{ marginTop: 40, fontSize: 11.5, color: "#4B525C", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 40, fontSize: 11.5, color: "#9CA3AF", lineHeight: 1.5 }}>
             Mỗi lần đổ dầu, biển số xe / số lít / số odo sẽ được đọc tự động từ 3 ảnh chụp. Bạn chỉ cần tích "báo sai" nếu thấy phần mềm đọc nhầm. Chưa có tài khoản? Liên hệ quản lý đội xe.
+          </div>
           </div>
         </div>
         {showSettings && (
@@ -696,25 +734,10 @@ export default function FuelLogApp() {
     <div style={shellStyle}>
       <GlobalStyle />
       <div style={cardStyle}>
-        <div style={{ padding: "20px 20px 0 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 7, background: "#F5A623", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <User size={16} color="#14171B" strokeWidth={2.2} />
-              </div>
-              <span style={{ fontSize: 15.5, fontWeight: 700 }}>{driver}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <button onClick={() => setShowSettings(true)} style={{ background: "none", border: "none", color: "#5B6472", cursor: "pointer" }}>
-                <Settings size={16} />
-              </button>
-              <button onClick={logout} style={{ background: "none", border: "none", color: "#5B6472", display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 12.5 }}>
-                <LogOut size={14} /> Đăng xuất
-              </button>
-            </div>
-          </div>
+        <div style={{ padding: "16px 20px 0 20px" }}>
+          <CompanyHeader subtitle={`Lái xe: ${driver}`} onSettings={() => setShowSettings(true)} onLogout={logout} />
 
-          <div style={{ display: "flex", gap: 4, marginTop: 20, borderBottom: "1px solid #262D34" }}>
+          <div style={{ display: "flex", gap: 4, marginTop: 4, borderBottom: "1px solid #E5E7EB" }}>
             {[
               { id: "nhap", label: "Đổ dầu", icon: Fuel },
               { id: "cuatoi", label: "Của tôi", icon: History },
@@ -726,7 +749,7 @@ export default function FuelLogApp() {
                 <button
                   key={t.id}
                   onClick={() => setTab(t.id)}
-                  style={{ flex: 1, background: "none", border: "none", padding: "10px 0 12px 0", color: active ? "#F5A623" : "#5B6472", borderBottom: active ? "2px solid #F5A623" : "2px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: -1 }}
+                  style={{ flex: 1, background: "none", border: "none", padding: "10px 0 12px 0", color: active ? "#F5A623" : "#9CA3AF", borderBottom: active ? "2px solid #F5A623" : "2px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 12.5, fontWeight: 600, cursor: "pointer", marginBottom: -1 }}
                 >
                   <Icon size={14} />
                   {t.label}
@@ -754,7 +777,7 @@ export default function FuelLogApp() {
                     setOcrStatus((s) => ({ ...s, plate: "idle" }));
                   }}
                   placeholder="VD: 24H-040.86"
-                  style={{ width: "100%", background: "#1B2027", border: ocrStatus.plate === "low" ? "1px solid #F5A623" : "1px solid #262D34", borderRadius: 10, padding: "14px 14px", color: "#EDEEF0", fontSize: 18, ...mono, outline: "none", boxSizing: "border-box", textTransform: "uppercase" }}
+                  style={{ width: "100%", background: "#FFFFFF", border: ocrStatus.plate === "low" ? "1px solid #F5A623" : "1px solid #E5E7EB", borderRadius: 10, padding: "14px 14px", color: "#111827", fontSize: 18, ...mono, outline: "none", boxSizing: "border-box", textTransform: "uppercase" }}
                 />
               </Field>
 
@@ -768,7 +791,7 @@ export default function FuelLogApp() {
                     setOcrStatus((s) => ({ ...s, liters: "idle" }));
                   }}
                   placeholder="0.0"
-                  style={{ width: "100%", background: "#1B2027", border: ocrStatus.liters === "low" ? "1px solid #F5A623" : "1px solid #262D34", borderRadius: 10, padding: "14px 14px", color: "#EDEEF0", fontSize: 20, ...mono, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: "#FFFFFF", border: ocrStatus.liters === "low" ? "1px solid #F5A623" : "1px solid #E5E7EB", borderRadius: 10, padding: "14px 14px", color: "#111827", fontSize: 20, ...mono, outline: "none", boxSizing: "border-box" }}
                 />
               </Field>
 
@@ -782,7 +805,7 @@ export default function FuelLogApp() {
                     setOcrStatus((s) => ({ ...s, odo: "idle" }));
                   }}
                   placeholder="0"
-                  style={{ width: "100%", background: "#1B2027", border: ocrStatus.odo === "low" ? "1px solid #F5A623" : "1px solid #262D34", borderRadius: 10, padding: "14px 14px", color: "#EDEEF0", fontSize: 20, ...mono, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: "#FFFFFF", border: ocrStatus.odo === "low" ? "1px solid #F5A623" : "1px solid #E5E7EB", borderRadius: 10, padding: "14px 14px", color: "#111827", fontSize: 20, ...mono, outline: "none", boxSizing: "border-box" }}
                 />
               </Field>
 
@@ -793,8 +816,8 @@ export default function FuelLogApp() {
                   gap: 10,
                   padding: "13px 14px",
                   borderRadius: 10,
-                  border: needsReview ? "1px solid #E5484D" : "1px solid #262D34",
-                  background: needsReview ? "rgba(229,72,77,0.08)" : "#1B2027",
+                  border: needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB",
+                  background: needsReview ? "rgba(229,72,77,0.08)" : "#FFFFFF",
                   marginBottom: 18,
                   cursor: "pointer",
                 }}
@@ -805,7 +828,7 @@ export default function FuelLogApp() {
                   onChange={(e) => setNeedsReview(e.target.checked)}
                   style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0, accentColor: "#E5484D" }}
                 />
-                <span style={{ fontSize: 12.5, lineHeight: 1.5, color: needsReview ? "#F0A8AA" : "#9AA4B2" }}>
+                <span style={{ fontSize: 12.5, lineHeight: 1.5, color: needsReview ? "#F0A8AA" : "#6B7280" }}>
                   Phần mềm đọc <b>sai</b> một trong các số ở trên — đánh dấu để kế toán xem lại ảnh và nhập tay lại.
                 </span>
               </label>
@@ -820,13 +843,13 @@ export default function FuelLogApp() {
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                style={{ width: "100%", padding: "15px 0", borderRadius: 10, border: "none", background: canSubmit ? "#F5A623" : "#262D34", color: canSubmit ? "#14171B" : "#5B6472", fontSize: 15, fontWeight: 700, cursor: canSubmit ? "pointer" : "default" }}
+                style={{ width: "100%", padding: "15px 0", borderRadius: 10, border: "none", background: canSubmit ? "#F5A623" : "#E5E7EB", color: canSubmit ? "#111827" : "#9CA3AF", fontSize: 15, fontWeight: 700, cursor: canSubmit ? "pointer" : "default" }}
               >
                 {saving ? "Đang lưu…" : "Lưu lần đổ dầu"}
               </button>
 
               {saveMsg && (
-                <div style={{ display: "flex", gap: 6, alignItems: "center", color: "#3DD68C", fontSize: 13, marginTop: 12, justifyContent: "center" }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", color: "#178A4C", fontSize: 13, marginTop: 12, justifyContent: "center" }}>
                   <Check size={14} /> {saveMsg}
                 </div>
               )}
@@ -840,10 +863,10 @@ export default function FuelLogApp() {
                   <AlertCircle size={15} /> {recordsError}
                 </div>
               )}
-              {records === null && !recordsError && <div style={{ color: "#5B6472", fontSize: 13 }}>Đang tải lịch sử…</div>}
+              {records === null && !recordsError && <div style={{ color: "#9CA3AF", fontSize: 13 }}>Đang tải lịch sử…</div>}
 
               {records !== null && records.length === 0 && (
-                <div style={{ textAlign: "center", padding: "50px 10px", color: "#5B6472" }}>
+                <div style={{ textAlign: "center", padding: "50px 10px", color: "#9CA3AF" }}>
                   <Gauge size={26} style={{ marginBottom: 10, opacity: 0.6 }} />
                   <div style={{ fontSize: 13.5 }}>Bạn chưa có lần đổ dầu nào.</div>
                 </div>
@@ -851,33 +874,33 @@ export default function FuelLogApp() {
 
               {records !== null && records.length > 0 && (
                 <>
-                  <div style={{ fontSize: 12, color: "#5B6472", marginBottom: 10 }}>{records.length} lần đổ dầu · mới nhất trước</div>
+                  <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 10 }}>{records.length} lần đổ dầu · mới nhất trước</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {myRecordsDesc.map((r) => (
-                      <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #262D34", borderRadius: 12, padding: "14px 16px", background: "#1B2027" }}>
+                      <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", background: "#FFFFFF" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                          <span style={{ fontSize: 12.5, color: "#8B94A0" }}>{formatDate(r.date)}</span>
+                          <span style={{ fontSize: 12.5, color: "#6B7280" }}>{formatDate(r.date)}</span>
                           {r.needsReview ? (
                             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700, color: "#E5484D" }}>
                               <AlertTriangle size={12} /> Cần kiểm tra
                             </span>
                           ) : (
-                            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "#3DD68C" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: "#178A4C" }}>
                               <Check size={12} /> Đã xác nhận đúng
                             </span>
                           )}
                         </div>
                         <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                           <div>
-                            <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>BIỂN SỐ</div>
+                            <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>BIỂN SỐ</div>
                             <div style={{ ...mono, fontSize: 14, fontWeight: 600 }}>{r.plate}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>ĐỔ DẦU</div>
+                            <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>ĐỔ DẦU</div>
                             <div style={{ ...mono, fontSize: 14, fontWeight: 600 }}>{Number(r.liters).toLocaleString("vi-VN")} L</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>ODO</div>
+                            <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>ODO</div>
                             <div style={{ ...mono, fontSize: 14, fontWeight: 600 }}>{Number(r.odo).toLocaleString("vi-VN")} km</div>
                           </div>
                         </div>
@@ -893,14 +916,14 @@ export default function FuelLogApp() {
             <div>
               {!selectedVehicle && (
                 <>
-                  <div style={{ fontSize: 12, color: "#5B6472", marginBottom: 12 }}>Chọn xe để xem lịch sử đổ dầu &amp; mức tiêu hao (gộp tất cả lái xe)</div>
-                  {vehicleList.length === 0 && <div style={{ color: "#5B6472", fontSize: 13 }}>Chưa có xe nào trong dữ liệu.</div>}
+                  <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 12 }}>Chọn xe để xem lịch sử đổ dầu &amp; mức tiêu hao (gộp tất cả lái xe)</div>
+                  {vehicleList.length === 0 && <div style={{ color: "#9CA3AF", fontSize: 13 }}>Chưa có xe nào trong dữ liệu.</div>}
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {vehicleList.map((p) => (
                       <button
                         key={p}
                         onClick={() => setSelectedVehicle(p)}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid #262D34", background: "#1B2027", color: "#EDEEF0", cursor: "pointer", textAlign: "left" }}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid #E5E7EB", background: "#FFFFFF", color: "#111827", cursor: "pointer", textAlign: "left" }}
                       >
                         <Car size={17} color="#F5A623" />
                         <span style={{ ...mono, fontSize: 15, fontWeight: 600 }}>{p}</span>
@@ -912,14 +935,14 @@ export default function FuelLogApp() {
 
               {selectedVehicle && (
                 <div>
-                  <button onClick={() => { setSelectedVehicle(null); setVehicleRecords(null); }} style={{ background: "none", border: "none", color: "#8B94A0", fontSize: 12.5, marginBottom: 14, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => { setSelectedVehicle(null); setVehicleRecords(null); }} style={{ background: "none", border: "none", color: "#6B7280", fontSize: 12.5, marginBottom: 14, cursor: "pointer", padding: 0 }}>
                     ← Chọn xe khác
                   </button>
 
-                  {vehicleRecords === null && <div style={{ color: "#5B6472", fontSize: 13 }}>Đang tải…</div>}
+                  {vehicleRecords === null && <div style={{ color: "#9CA3AF", fontSize: 13 }}>Đang tải…</div>}
 
                   {vehicleRecords !== null && vehicleRecords.length === 0 && (
-                    <div style={{ textAlign: "center", padding: "40px 10px", color: "#5B6472" }}>
+                    <div style={{ textAlign: "center", padding: "40px 10px", color: "#9CA3AF" }}>
                       <Gauge size={24} style={{ marginBottom: 10, opacity: 0.6 }} />
                       <div style={{ fontSize: 13.5 }}>Chưa có dữ liệu cho xe {selectedVehicle}.</div>
                     </div>
@@ -927,28 +950,28 @@ export default function FuelLogApp() {
 
                   {vehicleRecords !== null && vehicleRecords.length > 0 && (
                     <>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#1B2027", border: "1px solid #262D34", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#FFFFFF", border: "1px solid #E5E7EB", borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
                         <div>
-                          <div style={{ fontSize: 12, color: "#8B94A0", marginBottom: 4 }}>{selectedVehicle} · Tiêu hao trung bình</div>
+                          <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 4 }}>{selectedVehicle} · Tiêu hao trung bình</div>
                           <div style={{ ...mono, fontSize: 24, fontWeight: 700 }}>
                             {avgConsumption != null ? avgConsumption.toFixed(1) : "—"}
-                            <span style={{ fontSize: 13, color: "#8B94A0", fontWeight: 500 }}> lít/100km</span>
+                            <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}> lít/100km</span>
                           </div>
                         </div>
                         <TrendingDown size={26} color="#F5A623" strokeWidth={1.6} />
                       </div>
 
-                      <div style={{ fontSize: 12, color: "#5B6472", marginBottom: 10 }}>{vehicleRecords.length} lần đổ dầu · mới nhất trước</div>
+                      <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 10 }}>{vehicleRecords.length} lần đổ dầu · mới nhất trước</div>
 
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {vehicleWithConsumptionDesc.map((r) => (
-                          <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #262D34", borderRadius: 12, padding: "14px 16px", background: "#1B2027" }}>
+                          <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", background: "#FFFFFF" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                              <span style={{ fontSize: 12.5, color: "#8B94A0" }}>{formatDate(r.date)} · {r.driver}</span>
+                              <span style={{ fontSize: 12.5, color: "#6B7280" }}>{formatDate(r.date)} · {r.driver}</span>
                               {r.consumption != null ? (
                                 <span style={{ ...mono, fontSize: 13.5, fontWeight: 700, color: "#F5A623" }}>{r.consumption.toFixed(1)} L/100km</span>
                               ) : (
-                                <span style={{ fontSize: 11.5, color: "#5B6472" }}>Mốc khởi điểm</span>
+                                <span style={{ fontSize: 11.5, color: "#9CA3AF" }}>Mốc khởi điểm</span>
                               )}
                             </div>
                             {r.needsReview && (
@@ -958,16 +981,16 @@ export default function FuelLogApp() {
                             )}
                             <div style={{ display: "flex", gap: 18 }}>
                               <div>
-                                <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>ĐỔ DẦU</div>
+                                <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>ĐỔ DẦU</div>
                                 <div style={{ ...mono, fontSize: 15, fontWeight: 600 }}>{r.liters.toLocaleString("vi-VN")} L</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>ODO</div>
+                                <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>ODO</div>
                                 <div style={{ ...mono, fontSize: 15, fontWeight: 600 }}>{r.odo.toLocaleString("vi-VN")} km</div>
                               </div>
                               {r.distance != null && (
                                 <div>
-                                  <div style={{ fontSize: 10.5, color: "#5B6472", marginBottom: 2 }}>QUÃNG ĐƯỜNG</div>
+                                  <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>QUÃNG ĐƯỜNG</div>
                                   <div style={{ ...mono, fontSize: 15, fontWeight: 600 }}>{r.distance.toLocaleString("vi-VN")} km</div>
                                 </div>
                               )}
