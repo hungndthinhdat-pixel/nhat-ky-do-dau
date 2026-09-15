@@ -15,6 +15,8 @@ import {
   X,
   User,
   Truck,
+  ShieldCheck,
+  MapPin,
 } from "lucide-react";
 
 import {
@@ -26,47 +28,26 @@ import {
   mapAuthError,
 } from "./firebase.js";
 
-// ---------- local settings (per device) ----------
-
-const LS_WEBAPP_URL = "ndd:webapp-url";
-const LS_CLOUDINARY = "ndd:cloudinary";
-
-function getWebAppUrl() {
-  return localStorage.getItem(LS_WEBAPP_URL) || "";
-}
-function setWebAppUrl(url) {
-  if (url) localStorage.setItem(LS_WEBAPP_URL, url);
-  else localStorage.removeItem(LS_WEBAPP_URL);
-}
-function getCloudinaryConfig() {
-  try {
-    const raw = localStorage.getItem(LS_CLOUDINARY);
-    return raw ? JSON.parse(raw) : { cloudName: "", uploadPreset: "" };
-  } catch {
-    return { cloudName: "", uploadPreset: "" };
-  }
-}
-function setCloudinaryConfig(cloudName, uploadPreset) {
-  localStorage.setItem(LS_CLOUDINARY, JSON.stringify({ cloudName, uploadPreset }));
-}
+import {
+  GOOGLE_SHEET_URL,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_UPLOAD_PRESET,
+  ADMIN_USERNAMES,
+  FUEL_LOCATIONS,
+} from "./config.js";
 
 // ---------- Google Sheet backend ----------
 
 async function sheetGet(action, params = {}) {
-  const url = getWebAppUrl();
-  if (!url) throw new Error("no-webapp-url");
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(`${url}?${qs}`);
+  const res = await fetch(`${GOOGLE_SHEET_URL}?${new URLSearchParams({ action, ...params }).toString()}`);
   const data = await res.json();
   if (!data.ok) throw new Error(data.error || "sheet-error");
   return data;
 }
 
 async function sheetPost(payload) {
-  const url = getWebAppUrl();
-  if (!url) throw new Error("no-webapp-url");
   // Content-Type text/plain avoids a CORS preflight that Apps Script can't answer.
-  const res = await fetch(url, {
+  const res = await fetch(GOOGLE_SHEET_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
@@ -89,19 +70,55 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function uploadToCloudinary(dataUrl) {
-  const { cloudName, uploadPreset } = getCloudinaryConfig();
-  if (!cloudName || !uploadPreset) throw new Error("no-cloudinary-config");
   const form = new FormData();
   form.append("file", dataUrlToBlob(dataUrl));
-  form.append("upload_preset", uploadPreset);
+  form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   form.append("folder", "nhat-ky-do-dau");
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
     method: "POST",
     body: form,
   });
   const data = await res.json();
   if (!data.secure_url) throw new Error((data.error && data.error.message) || "upload-failed");
   return data.secure_url;
+}
+
+// ---------- location (GPS) ----------
+
+function getCurrentPosition() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  });
+}
+
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function matchLocation(point, locations) {
+  if (!point) return null;
+  let best = null;
+  let bestDist = Infinity;
+  for (const loc of locations) {
+    const d = haversineMeters(point.lat, point.lng, loc.lat, loc.lng);
+    if (d <= loc.radiusMeters && d < bestDist) {
+      best = loc.name;
+      bestDist = d;
+    }
+  }
+  return best;
 }
 
 // ---------- image helpers ----------
@@ -273,6 +290,27 @@ function PhotoSlot({ label, dataUrl, onCapture, busy }) {
   );
 }
 
+function LocationBadge({ record }) {
+  if (!record.locationName) return null;
+  const hasCoords = record.lat && record.lng;
+  const content = (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, color: "#178A4C" }}>
+      <MapPin size={11} /> {record.locationName}
+    </span>
+  );
+  if (!hasCoords) return content;
+  return (
+    <a
+      href={`https://maps.google.com/?q=${record.lat},${record.lng}`}
+      target="_blank"
+      rel="noreferrer"
+      style={{ textDecoration: "none" }}
+    >
+      {content}
+    </a>
+  );
+}
+
 function GlobalStyle() {
   return <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>;
 }
@@ -323,69 +361,15 @@ function CompanyHeader({ subtitle, onSettings, onLogout }) {
   );
 }
 
-// ---------- settings modal ----------
-
-function SettingsModal({ initialUrl, initialCloudName, initialUploadPreset, onSave, onClose }) {
-  const [value, setValue] = useState(initialUrl);
-  const [cloudName, setCloudNameField] = useState(initialCloudName);
-  const [uploadPreset, setUploadPresetField] = useState(initialUploadPreset);
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }}
-      onClick={onClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 420, background: "#FFFFFF", borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: "22px 20px 30px 20px", maxHeight: "85vh", overflowY: "auto" }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>Cài đặt kết nối</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#6B7280", cursor: "pointer" }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7280", marginBottom: 8 }}>Google Sheet</div>
-        <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5, marginBottom: 10 }}>Link Web App của Google Apps Script (xem README.md).</p>
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="https://script.google.com/macros/s/.../exec"
-          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
-        />
-
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7280", marginBottom: 8 }}>Cloudinary (lưu ảnh)</div>
-        <p style={{ fontSize: 12, color: "#6B7280", lineHeight: 1.5, marginBottom: 10 }}>Cloud name và Upload preset (xem README.md, mục Cloudinary).</p>
-        <input
-          value={cloudName}
-          onChange={(e) => setCloudNameField(e.target.value)}
-          placeholder="Cloud name — vd: dabc123xy"
-          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 10, boxSizing: "border-box" }}
-        />
-        <input
-          value={uploadPreset}
-          onChange={(e) => setUploadPresetField(e.target.value)}
-          placeholder="Upload preset — vd: nhat_ky_do_dau"
-          style={{ width: "100%", background: "#F3F4F6", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", color: "#111827", fontSize: 13, outline: "none", marginBottom: 20, boxSizing: "border-box" }}
-        />
-
-        <button
-          onClick={() => onSave({ webAppUrl: value.trim(), cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim() })}
-          style={{ width: "100%", padding: "13px 0", borderRadius: 10, border: "none", background: "#F5A623", color: "#111827", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-        >
-          Lưu
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ---------- main app ----------
 
 export default function FuelLogApp() {
-  const [webAppUrl, setWebAppUrlState] = useState(getWebAppUrl());
-  const [cloudinaryCfg, setCloudinaryCfg] = useState(getCloudinaryConfig());
-  const [showSettings, setShowSettings] = useState(false);
+  const configured = GOOGLE_SHEET_URL !== "REPLACE_ME" && !!GOOGLE_SHEET_URL;
+  const cloudinaryReady =
+    CLOUDINARY_CLOUD_NAME !== "REPLACE_ME" &&
+    CLOUDINARY_UPLOAD_PRESET !== "REPLACE_ME" &&
+    !!CLOUDINARY_CLOUD_NAME &&
+    !!CLOUDINARY_UPLOAD_PRESET;
 
   const [authLoading, setAuthLoading] = useState(true);
   const [driver, setDriver] = useState(null);
@@ -413,17 +397,16 @@ export default function FuelLogApp() {
   const [formError, setFormError] = useState("");
   const [ocrStatus, setOcrStatus] = useState({ plate: "idle", liters: "idle", odo: "idle" });
 
-  const configured = !!webAppUrl;
-  const cloudinaryReady = !!(cloudinaryCfg.cloudName && cloudinaryCfg.uploadPreset);
+  const isAdmin = !!(driver && ADMIN_USERNAMES.map((a) => a.toLowerCase()).includes(driver.toLowerCase()));
+  const [adminRecords, setAdminRecords] = useState(null);
+  const [adminError, setAdminError] = useState("");
+  const [vehicleModels, setVehicleModels] = useState(null);
+  const [driverNames, setDriverNames] = useState({});
 
-  const applySettings = useCallback(({ webAppUrl: newUrl, cloudName, uploadPreset }) => {
-    setWebAppUrl(newUrl);
-    setWebAppUrlState(newUrl);
-    setCloudinaryConfig(cloudName, uploadPreset);
-    setCloudinaryCfg({ cloudName, uploadPreset });
-    setShowSettings(false);
-    window.location.reload();
-  }, []);
+  const displayName = useCallback(
+    (username) => (username && driverNames[username.toLowerCase()]) || username,
+    [driverNames]
+  );
 
   useEffect(() => {
     const unsubscribe = watchDriver((name) => {
@@ -443,6 +426,13 @@ export default function FuelLogApp() {
   }, [driver, configured]);
 
   useEffect(() => {
+    if (!driver || !configured) return;
+    sheetGet("driverNames")
+      .then((d) => setDriverNames(d.names || {}))
+      .catch(() => {});
+  }, [driver, configured]);
+
+  useEffect(() => {
     if (!configured || tab !== "theoxe") return;
     sheetGet("vehicles")
       .then((d) => setVehicleList(d.plates || []))
@@ -456,6 +446,18 @@ export default function FuelLogApp() {
       .then((d) => setVehicleRecords(d.records || []))
       .catch(() => setVehicleRecords([]));
   }, [selectedVehicle]);
+
+  useEffect(() => {
+    if (!configured || !isAdmin || tab !== "quantri") return;
+    setAdminRecords(null);
+    setAdminError("");
+    Promise.all([sheetGet("all"), sheetGet("vehicleModels")])
+      .then(([recRes, modelRes]) => {
+        setAdminRecords(recRes.records || []);
+        setVehicleModels(modelRes.models || {});
+      })
+      .catch(() => setAdminError("Không tải được dữ liệu, kiểm tra kết nối mạng."));
+  }, [configured, isAdmin, tab]);
 
   const doLogin = useCallback(async () => {
     setLoginError("");
@@ -526,11 +528,13 @@ export default function FuelLogApp() {
 
     setSaving(true);
     try {
-      const [meterPhotoUrl, odoPhotoUrl, platePhotoUrl] = await Promise.all([
+      const [meterPhotoUrl, odoPhotoUrl, platePhotoUrl, position] = await Promise.all([
         uploadToCloudinary(photos.meter),
         uploadToCloudinary(photos.odo),
         uploadToCloudinary(photos.plateShot),
+        getCurrentPosition(),
       ]);
+      const locationName = matchLocation(position, FUEL_LOCATIONS) || (position ? "Không xác định" : "");
       await sheetPost({
         action: "add",
         driver,
@@ -542,6 +546,9 @@ export default function FuelLogApp() {
         meterPhotoUrl,
         odoPhotoUrl,
         platePhotoUrl,
+        locationName,
+        lat: position ? position.lat : null,
+        lng: position ? position.lng : null,
       });
       const d = await sheetGet("list", { driver });
       setRecords(d.records || []);
@@ -581,6 +588,80 @@ export default function FuelLogApp() {
 
   const myRecordsDesc = records ? [...records].sort((a, b) => new Date(b.date) - new Date(a.date)) : [];
 
+  // ---- admin dashboard: aggregate every vehicle, flag records that need review ----
+  function computeConsumption(recs) {
+    const sorted = [...recs].map((r) => ({ ...r, liters: Number(r.liters), odo: Number(r.odo) })).sort((a, b) => a.odo - b.odo);
+    return sorted.map((rec, i) => {
+      if (i === 0) return { ...rec, distance: null, consumption: null };
+      const prev = sorted[i - 1];
+      const distance = rec.odo - prev.odo;
+      const consumption = distance > 0 ? (rec.liters / distance) * 100 : null;
+      return { ...rec, distance, consumption };
+    });
+  }
+
+  let adminVehicleSummaries = [];
+  let adminFlagged = [];
+  let adminRecordsDesc = [];
+  let adminModelSummaries = [];
+  let adminDriverModelSummaries = [];
+  if (adminRecords) {
+    const byPlate = {};
+    for (const r of adminRecords) {
+      const key = r.plate || "(chưa rõ biển số)";
+      if (!byPlate[key]) byPlate[key] = [];
+      byPlate[key].push(r);
+    }
+
+    const modelOf = (plate) => (vehicleModels && vehicleModels[plate]) || "(chưa gán dòng xe)";
+
+    // flat list of every computable fill-up interval, tagged with plate/model/driver
+    const events = [];
+    adminVehicleSummaries = Object.entries(byPlate)
+      .map(([plate, recs]) => {
+        const withConsumption = computeConsumption(recs);
+        withConsumption.forEach((r) => {
+          if (r.consumption != null) events.push({ ...r, plate, model: modelOf(plate) });
+        });
+        const valid = withConsumption.filter((r) => r.consumption != null);
+        const avg = valid.length > 0 ? valid.reduce((s, r) => s + r.consumption, 0) / valid.length : null;
+        return { plate, model: modelOf(plate), count: recs.length, avgConsumption: avg };
+      })
+      .sort((a, b) => a.plate.localeCompare(b.plate));
+
+    const byModel = {};
+    for (const ev of events) {
+      if (!byModel[ev.model]) byModel[ev.model] = [];
+      byModel[ev.model].push(ev);
+    }
+    adminModelSummaries = Object.entries(byModel)
+      .map(([model, evs]) => ({
+        model,
+        avgConsumption: evs.reduce((s, e) => s + e.consumption, 0) / evs.length,
+        count: evs.length,
+        plateCount: new Set(evs.map((e) => e.plate)).size,
+      }))
+      .sort((a, b) => b.avgConsumption - a.avgConsumption);
+
+    const byDriverModel = {};
+    for (const ev of events) {
+      const key = `${ev.driver}||${ev.model}`;
+      if (!byDriverModel[key]) byDriverModel[key] = { driver: ev.driver, model: ev.model, evs: [] };
+      byDriverModel[key].evs.push(ev);
+    }
+    adminDriverModelSummaries = Object.values(byDriverModel)
+      .map((g) => ({
+        driver: g.driver,
+        model: g.model,
+        avgConsumption: g.evs.reduce((s, e) => s + e.consumption, 0) / g.evs.length,
+        count: g.evs.length,
+      }))
+      .sort((a, b) => a.model.localeCompare(b.model) || a.avgConsumption - b.avgConsumption);
+
+    adminFlagged = adminRecords.filter((r) => r.needsReview).sort((a, b) => new Date(b.date) - new Date(a.date));
+    adminRecordsDesc = [...adminRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
   const shellStyle = {
     minHeight: "100vh",
     background: "#F3F4F6",
@@ -605,25 +686,10 @@ export default function FuelLogApp() {
             <Fuel size={24} color="#111827" />
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Chưa cấu hình xong: {missing.join(", ")}</div>
-          <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6, marginBottom: 24 }}>
-            App này cần link Google Apps Script (lưu dữ liệu) và tài khoản Cloudinary (lưu ảnh). Làm theo file <b>README.md</b> đi kèm, sau đó nhập vào đây.
+          <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6 }}>
+            Mở file <b>src/config.js</b>, điền link Google Sheet và thông tin Cloudinary vào, rồi build lại. Xem hướng dẫn chi tiết trong <b>README.md</b>.
           </p>
-          <button
-            onClick={() => setShowSettings(true)}
-            style={{ padding: "13px 26px", borderRadius: 10, border: "none", background: "#F5A623", color: "#111827", fontWeight: 700, fontSize: 14, cursor: "pointer" }}
-          >
-            Mở Cài đặt
-          </button>
         </div>
-        {showSettings && (
-          <SettingsModal
-            initialUrl={webAppUrl}
-            initialCloudName={cloudinaryCfg.cloudName}
-            initialUploadPreset={cloudinaryCfg.uploadPreset}
-            onClose={() => setShowSettings(false)}
-            onSave={applySettings}
-          />
-        )}
       </div>
     );
   }
@@ -664,7 +730,7 @@ export default function FuelLogApp() {
       <div style={shellStyle}>
         <GlobalStyle />
         <div style={{ ...cardStyle, padding: "24px 20px" }}>
-          <CompanyHeader subtitle="Đăng nhập lái xe" onSettings={() => setShowSettings(true)} />
+          <CompanyHeader subtitle="Đăng nhập lái xe" />
           <div style={{ padding: "0 4px" }}>
           <p style={{ color: "#6B7280", fontSize: 13.5, marginTop: 6, marginBottom: 32, lineHeight: 1.5 }}>
             Đăng nhập bằng tài khoản quản lý đội xe cấp cho bạn.
@@ -716,15 +782,6 @@ export default function FuelLogApp() {
           </div>
           </div>
         </div>
-        {showSettings && (
-          <SettingsModal
-            initialUrl={webAppUrl}
-            initialCloudName={cloudinaryCfg.cloudName}
-            initialUploadPreset={cloudinaryCfg.uploadPreset}
-            onClose={() => setShowSettings(false)}
-            onSave={applySettings}
-          />
-        )}
       </div>
     );
   }
@@ -735,13 +792,14 @@ export default function FuelLogApp() {
       <GlobalStyle />
       <div style={cardStyle}>
         <div style={{ padding: "16px 20px 0 20px" }}>
-          <CompanyHeader subtitle={`Lái xe: ${driver}`} onSettings={() => setShowSettings(true)} onLogout={logout} />
+          <CompanyHeader subtitle={`Lái xe: ${displayName(driver)}`} onLogout={logout} />
 
           <div style={{ display: "flex", gap: 4, marginTop: 4, borderBottom: "1px solid #E5E7EB" }}>
             {[
               { id: "nhap", label: "Đổ dầu", icon: Fuel },
               { id: "cuatoi", label: "Của tôi", icon: History },
               { id: "theoxe", label: "Theo xe", icon: Truck },
+              ...(isAdmin ? [{ id: "quantri", label: "Quản trị", icon: ShieldCheck }] : []),
             ].map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
@@ -878,7 +936,7 @@ export default function FuelLogApp() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {myRecordsDesc.map((r) => (
                       <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", background: "#FFFFFF" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                           <span style={{ fontSize: 12.5, color: "#6B7280" }}>{formatDate(r.date)}</span>
                           {r.needsReview ? (
                             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700, color: "#E5484D" }}>
@@ -890,6 +948,7 @@ export default function FuelLogApp() {
                             </span>
                           )}
                         </div>
+                        <div style={{ marginBottom: 10 }}><LocationBadge record={r} /></div>
                         <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                           <div>
                             <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>BIỂN SỐ</div>
@@ -967,7 +1026,7 @@ export default function FuelLogApp() {
                         {vehicleWithConsumptionDesc.map((r) => (
                           <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB", borderRadius: 12, padding: "14px 16px", background: "#FFFFFF" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                              <span style={{ fontSize: 12.5, color: "#6B7280" }}>{formatDate(r.date)} · {r.driver}</span>
+                              <span style={{ fontSize: 12.5, color: "#6B7280" }}>{formatDate(r.date)} · {displayName(r.driver)}</span>
                               {r.consumption != null ? (
                                 <span style={{ ...mono, fontSize: 13.5, fontWeight: 700, color: "#F5A623" }}>{r.consumption.toFixed(1)} L/100km</span>
                               ) : (
@@ -979,6 +1038,7 @@ export default function FuelLogApp() {
                                 <AlertTriangle size={11} /> Lái xe báo đọc sai — cần kiểm tra ảnh
                               </div>
                             )}
+                            <div style={{ marginBottom: 8 }}><LocationBadge record={r} /></div>
                             <div style={{ display: "flex", gap: 18 }}>
                               <div>
                                 <div style={{ fontSize: 10.5, color: "#9CA3AF", marginBottom: 2 }}>ĐỔ DẦU</div>
@@ -1004,18 +1064,130 @@ export default function FuelLogApp() {
               )}
             </div>
           )}
+
+          {tab === "quantri" && isAdmin && (
+            <div>
+              {adminError && (
+                <div style={{ display: "flex", gap: 7, color: "#E5484D", fontSize: 13, marginBottom: 16 }}>
+                  <AlertCircle size={15} /> {adminError}
+                </div>
+              )}
+              {adminRecords === null && !adminError && <div style={{ color: "#9CA3AF", fontSize: 13 }}>Đang tải dữ liệu toàn đội xe…</div>}
+
+              {adminRecords !== null && (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 10 }}>Tiêu hao trung bình theo xe</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                    {adminVehicleSummaries.length === 0 && <div style={{ fontSize: 13, color: "#9CA3AF" }}>Chưa có dữ liệu.</div>}
+                    {adminVehicleSummaries.map((v) => (
+                      <div key={v.plate} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", background: "#FFFFFF" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                          <Car size={15} color="#F5A623" style={{ flexShrink: 0 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ ...mono, fontSize: 14, fontWeight: 600 }}>{v.plate}</div>
+                            <div style={{ fontSize: 10.5, color: "#9CA3AF" }}>{v.model}</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <span style={{ ...mono, fontSize: 14, fontWeight: 700, color: "#178A4C" }}>
+                            {v.avgConsumption != null ? v.avgConsumption.toFixed(1) : "—"} L/100km
+                          </span>
+                          <div style={{ fontSize: 11, color: "#9CA3AF" }}>{v.count} lần đổ dầu</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 10 }}>Tiêu hao trung bình theo dòng xe</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                    {adminModelSummaries.length === 0 && <div style={{ fontSize: 13, color: "#9CA3AF" }}>Chưa có dữ liệu.</div>}
+                    {adminModelSummaries.map((m) => (
+                      <div key={m.model} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E5E7EB", borderRadius: 10, padding: "12px 14px", background: "#FFFFFF" }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#111827" }}>{m.model}</div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ ...mono, fontSize: 14, fontWeight: 700, color: "#178A4C" }}>{m.avgConsumption.toFixed(1)} L/100km</span>
+                          <div style={{ fontSize: 11, color: "#9CA3AF" }}>{m.plateCount} xe · {m.count} lần đổ dầu</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 4 }}>Tiêu hao theo Lái xe × Dòng xe</div>
+                  <div style={{ fontSize: 11.5, color: "#9CA3AF", marginBottom: 10 }}>So sánh trực tiếp — cùng 1 dòng xe, xếp từ tiết kiệm nhất trở lên.</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 24 }}>
+                    {Object.entries(
+                      adminDriverModelSummaries.reduce((acc, r) => {
+                        if (!acc[r.model]) acc[r.model] = [];
+                        acc[r.model].push(r);
+                        return acc;
+                      }, {})
+                    ).map(([model, rows]) => (
+                      <div key={model}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", marginBottom: 6 }}>{model}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {rows.map((r) => (
+                            <div key={r.driver} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid #E5E7EB", borderRadius: 8, padding: "9px 12px", background: "#FFFFFF" }}>
+                              <span style={{ fontSize: 13 }}>{displayName(r.driver)}</span>
+                              <div style={{ textAlign: "right" }}>
+                                <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: "#178A4C" }}>{r.avgConsumption.toFixed(1)} L/100km</span>
+                                <span style={{ fontSize: 10.5, color: "#9CA3AF", marginLeft: 6 }}>({r.count} lần)</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {adminDriverModelSummaries.length === 0 && <div style={{ fontSize: 13, color: "#9CA3AF" }}>Chưa đủ dữ liệu để so sánh.</div>}
+                  </div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#E5484D", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                    <AlertTriangle size={15} /> Cần kiểm tra ({adminFlagged.length})
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+                    {adminFlagged.length === 0 && <div style={{ fontSize: 13, color: "#9CA3AF" }}>Không có lần nào bị báo đọc sai.</div>}
+                    {adminFlagged.map((r) => (
+                      <div key={r.id} style={{ border: "1px solid #E5484D", borderRadius: 10, padding: "12px 14px", background: "#FEF2F2" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#6B7280", marginBottom: 6 }}>
+                          <span>{formatDate(r.date)} · {displayName(r.driver)}</span>
+                          <span style={{ ...mono, fontWeight: 700 }}>{r.plate}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 14, fontSize: 13 }}>
+                          <span><b>{Number(r.liters).toLocaleString("vi-VN")}</b> L</span>
+                          <span><b>{Number(r.odo).toLocaleString("vi-VN")}</b> km</span>
+                        </div>
+                        <div style={{ marginTop: 6 }}><LocationBadge record={r} /></div>
+                        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                          {r.meterPhotoUrl && <a href={r.meterPhotoUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11.5, color: "#178A4C" }}>Ảnh cây dầu</a>}
+                          {r.odoPhotoUrl && <a href={r.odoPhotoUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11.5, color: "#178A4C" }}>Ảnh odo</a>}
+                          {r.platePhotoUrl && <a href={r.platePhotoUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11.5, color: "#178A4C" }}>Ảnh biển số</a>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 10 }}>Toàn bộ lịch sử ({adminRecordsDesc.length})</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {adminRecordsDesc.map((r) => (
+                      <div key={r.id} style={{ border: r.needsReview ? "1px solid #E5484D" : "1px solid #E5E7EB", borderRadius: 10, padding: "10px 14px", background: "#FFFFFF", fontSize: 12.5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", color: "#6B7280" }}>
+                          <span>{formatDate(r.date)} · {displayName(r.driver)}</span>
+                          <span style={{ ...mono, fontWeight: 700, color: "#111827" }}>{r.plate}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 14, marginTop: 4, alignItems: "center" }}>
+                          <span>{Number(r.liters).toLocaleString("vi-VN")} L</span>
+                          <span>{Number(r.odo).toLocaleString("vi-VN")} km</span>
+                          {r.needsReview && <span style={{ color: "#E5484D", fontWeight: 700 }}>Cần kiểm tra</span>}
+                          <LocationBadge record={r} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {showSettings && (
-        <SettingsModal
-          initialUrl={webAppUrl}
-          initialCloudName={cloudinaryCfg.cloudName}
-          initialUploadPreset={cloudinaryCfg.uploadPreset}
-          onClose={() => setShowSettings(false)}
-          onSave={applySettings}
-        />
-      )}
     </div>
   );
 }
