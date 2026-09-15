@@ -6,13 +6,13 @@
 
 // Link Web App của Google Apps Script (Bước 1 trong README) — dạng:
 // https://script.google.com/macros/s/AKfycb.../exec
-export const GOOGLE_SHEET_URL = "REPLACE_ME";
+export const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbx_GBYLhogEBkut70Up6XNSUNq7nIB6BnThh186JpqJQLbKE1vQl0Tl7YGKBYdGqFvX5A/exec";
 
 // Cloud name của tài khoản Cloudinary (Bước 2 trong README)
-export const CLOUDINARY_CLOUD_NAME = "REPLACE_ME";
+export const CLOUDINARY_CLOUD_NAME = "ioxmblxq";
 
 // Tên Upload preset đã tạo ở Cloudinary, chế độ Unsigned (Bước 2 trong README)
-export const CLOUDINARY_UPLOAD_PRESET = "REPLACE_ME";
+export const CLOUDINARY_UPLOAD_PRESET = "nhat ky do dau";
 
 // Danh sách tên đăng nhập (phần trước dấu @) được coi là ADMIN — có thêm
 // tab "Quản trị" để xem lịch sử + mức tiêu hao của TOÀN BỘ đội xe, không
